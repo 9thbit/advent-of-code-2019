@@ -27,22 +27,37 @@ def disect_instruction(instruction):
     return opcode, paramter1_mode, paramter2_mode, paramter3_mode
 
 
+class Computer:
+
+    def __init__(self, program):
+        self.memory = program[:]
+        self.instruction_pointer = 0
+
+    def next(self):
+        assert self.has_next()
+        value = self.memory[self.instruction_pointer]
+        self.instruction_pointer += 1
+        return value
+
+    def has_next(self):
+        return 0 <= self.instruction_pointer < len(self.memory)
+
+
 def run_program(program, input_stream, output_stream):
 
-    memory = program[:]
-    instructions = iter(memory)
+    computer = Computer(program)
 
     def get_argument(argument_mode):
-        arg_value = next(instructions)
+        arg_value = computer.next()
         if argument_mode == ArgumentMode.POSITION:
-            return memory[arg_value]
+            return computer.memory[arg_value]
         elif argument_mode == ArgumentMode.IMMEDIATE:
             return arg_value
         else:
             raise NotImplementedError(f'{argument_mode=}')
 
-    while instructions:
-        instruction = next(instructions)
+    while computer.has_next():
+        instruction = computer.next()
         opcode, paramter1_mode, paramter2_mode, paramter3_mode = disect_instruction(instruction)
         if opcode == Opcodes.END_OPCODE:
             break
@@ -50,28 +65,28 @@ def run_program(program, input_stream, output_stream):
         if opcode == Opcodes.ADD_OPCODE:
             argument1 = get_argument(paramter1_mode)
             argument2 = get_argument(paramter2_mode)
-            output_position = next(instructions)
-            memory[output_position] = argument1 + argument2
+            output_position = computer.next()
+            computer.memory[output_position] = argument1 + argument2
 
         elif opcode == Opcodes.MULTIPLY_OPCODE:
             argument1 = get_argument(paramter1_mode)
             argument2 = get_argument(paramter2_mode)
-            output_position = next(instructions)
-            memory[output_position] = argument1 * argument2
+            output_position = computer.next()
+            computer.memory[output_position] = argument1 * argument2
 
         elif opcode == Opcodes.INPUT_OPCODE:
-            output_position = next(instructions)
+            output_position = computer.next()
             output_value = next(input_stream)
-            memory[output_position] = output_value
+            computer.memory[output_position] = output_value
 
         elif opcode == Opcodes.OUTPUT_OPCODE:
-            value_position = next(instructions)
-            output_stream.append(memory[value_position])
+            value_position = computer.next()
+            output_stream.append(computer.memory[value_position])
 
         else:
             raise NotImplementedError(f'{opcode=}')
 
-    return memory
+    return computer.memory
 
 
 def main():
