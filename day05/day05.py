@@ -6,6 +6,10 @@ class Opcodes(IntEnum):
     MULTIPLY_OPCODE = 2
     INPUT_OPCODE = 3
     OUTPUT_OPCODE = 4
+    JUMP_IF_TRUE = 5
+    JUMP_IF_FALSE = 6
+    LESS_THAN = 7
+    EQUALS = 8
     END_OPCODE = 99
 
 
@@ -41,6 +45,10 @@ class Computer:
 
     def has_next(self):
         return 0 <= self.instruction_pointer < len(self.memory)
+
+    def jump(self, target_instruction_pointer):
+        assert 0 <= target_instruction_pointer < len(self.memory)
+        self.instruction_pointer = target_instruction_pointer
 
 
 def run_program(program, input_stream, output_stream):
@@ -80,8 +88,32 @@ def run_program(program, input_stream, output_stream):
             computer.memory[output_position] = output_value
 
         elif opcode == Opcodes.OUTPUT_OPCODE:
-            value_position = computer.next()
-            output_stream.append(computer.memory[value_position])
+            value = get_argument(paramter1_mode)
+            output_stream.append(value)
+
+        elif opcode == Opcodes.JUMP_IF_TRUE:
+            argument1 = get_argument(paramter1_mode)
+            argument2 = get_argument(paramter2_mode)
+            if argument1 != 0:
+                computer.jump(argument2)
+
+        elif opcode == Opcodes.JUMP_IF_FALSE:
+            argument1 = get_argument(paramter1_mode)
+            argument2 = get_argument(paramter2_mode)
+            if argument1 == 0:
+                computer.jump(argument2)
+
+        elif opcode == Opcodes.LESS_THAN:
+            argument1 = get_argument(paramter1_mode)
+            argument2 = get_argument(paramter2_mode)
+            output_position = computer.next()
+            computer.memory[output_position] = int(argument1 < argument2)
+
+        elif opcode == Opcodes.EQUALS:
+            argument1 = get_argument(paramter1_mode)
+            argument2 = get_argument(paramter2_mode)
+            output_position = computer.next()
+            computer.memory[output_position] = int(argument1 == argument2)
 
         else:
             raise NotImplementedError(f'{opcode=}')
@@ -95,8 +127,13 @@ def main():
 
     input_stream = [1]
     output_stream = []
-    memory = run_program(input_program, iter(input_stream), output_stream)
+    run_program(input_program, iter(input_stream), output_stream)
     print(f'Part 1: {output_stream[-1]}')
+
+    input_stream = [5]
+    output_stream = []
+    run_program(input_program, iter(input_stream), output_stream)
+    print(f'Part 2: {output_stream[-1]}')
 
 
 if __name__ == "__main__":
